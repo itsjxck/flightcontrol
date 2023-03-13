@@ -57,6 +57,7 @@ export type ExtractConfigByBuildType<T extends FargateServiceConfig["buildType"]
 class FargateService extends Service {
   constructor(private fargateConfig: FargateServiceConfig) {
     super({ ...fargateConfig, type: "fargate" });
+    if ("basePath" in fargateConfig) this.fargateConfig.buildType = "nixpacks";
     if ("fromService" in fargateConfig) this.fargateConfig.buildType = "fromService";
     if ("containerImage" in fargateConfig) this.fargateConfig.buildType = "fromRepository";
     if ("dockerfilePath" in fargateConfig) this.fargateConfig.buildType = "docker";
