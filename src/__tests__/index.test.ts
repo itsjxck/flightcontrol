@@ -45,6 +45,7 @@ describe("create a project", () => {
     const api = new Service.Fargate({
       id: "redwood-api",
       name: "Redwood API",
+      buildType: "nodejs",
       domain: ({ environment }) =>
         environment?.id === prod.id ? "api.example.com" : `api.${environment?.id}.example.com`,
       cpu: ({ environment }) => (environment?.id === prod.id ? 1 : 0.25),

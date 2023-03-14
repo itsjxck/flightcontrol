@@ -16,20 +16,21 @@ export type FargateServiceConfig = Omit<ServiceConfig, "type"> & {
   port: ValueOrFunctionWithBuildContext<number>;
   healthCheckPath?: ValueOrFunctionWithBuildContext<string>;
 } & (
-    | {
-        buildType?: ServiceBuildType<"nodejs">;
-        postBuildCommand?: ValueOrFunctionWithBuildContext<string>;
-      }
-    | {
-        buildType: ServiceBuildType<"nixpacks" | "nodejs">;
+    | ({
+        buildType: ServiceBuildType<"nodejs" | "nixpacks">;
         installCommand?: ValueOrFunctionWithBuildContext<string>;
         buildCommand?: ValueOrFunctionWithBuildContext<string>;
         startCommand?: ValueOrFunctionWithBuildContext<string>;
-      }
-    | {
-        buildType: ServiceBuildType<"nixpacks">;
-        basePath?: ValueOrFunctionWithBuildContext<string>;
-      }
+      } & (
+        | {
+            buildType: ServiceBuildType<"nodejs">;
+            postBuildCommand?: ValueOrFunctionWithBuildContext<string>;
+          }
+        | {
+            buildType: ServiceBuildType<"nixpacks">;
+            basePath?: ValueOrFunctionWithBuildContext<string>;
+          }
+      ))
     | {
         buildType: ServiceBuildType<"fromService">;
         fromService: ValueOrFunctionWithBuildContext<Service>;
@@ -49,7 +50,7 @@ export type FargateServiceConfig = Omit<ServiceConfig, "type"> & {
       }
   );
 
-export type ExtractConfigByBuildType<T extends FargateServiceConfig["buildType"]> = Extract<
+export type ExtractConfigByBuildType<T extends FargateServiceConfig["buildType"] | undefined> = Extract<
   FargateServiceConfig,
   { buildType: T }
 >;
@@ -57,10 +58,6 @@ export type ExtractConfigByBuildType<T extends FargateServiceConfig["buildType"]
 class FargateService extends Service {
   constructor(private fargateConfig: FargateServiceConfig) {
     super({ ...fargateConfig, type: "fargate" });
-    if ("basePath" in fargateConfig) this.fargateConfig.buildType = "nixpacks";
-    if ("fromService" in fargateConfig) this.fargateConfig.buildType = "fromService";
-    if ("containerImage" in fargateConfig) this.fargateConfig.buildType = "fromRepository";
-    if ("dockerfilePath" in fargateConfig) this.fargateConfig.buildType = "docker";
   }
 
   get buildType(): FargateServiceConfig["buildType"] {
@@ -99,6 +96,34 @@ class FargateService extends Service {
     return this.fargateConfig.healthCheckPath;
   }
 
+  get postBuildCommand(): ExtractConfigByBuildType<"nodejs">["postBuildCommand"] {
+    if (this.fargateConfig.buildType === undefined || this.fargateConfig.buildType === "nodejs")
+      return this.fargateConfig.postBuildCommand;
+  }
+
+  get installCommand(): ExtractConfigByBuildType<"nodejs" | "nixpacks">["installCommand"] {
+    if (this.fargateConfig.buildType === "nodejs" || this.fargateConfig.buildType === "nixpacks")
+      return this.fargateConfig.installCommand;
+    return undefined;
+  }
+
+  get buildCommand(): ExtractConfigByBuildType<"nodejs" | "nixpacks">["buildCommand"] {
+    if (this.fargateConfig.buildType === "nodejs" || this.fargateConfig.buildType === "nixpacks")
+      return this.fargateConfig.buildCommand;
+    return undefined;
+  }
+
+  get startCommand(): ExtractConfigByBuildType<"nodejs" | "nixpacks">["startCommand"] {
+    if (this.fargateConfig.buildType === "nodejs" || this.fargateConfig.buildType === "nixpacks")
+      return this.fargateConfig.startCommand;
+    return undefined;
+  }
+
+  get basePath(): ExtractConfigByBuildType<"nixpacks">["basePath"] {
+    if (this.fargateConfig.buildType !== "nixpacks") return undefined;
+    return this.fargateConfig.basePath;
+  }
+
   get fromService(): ExtractConfigByBuildType<"fromService">["fromService"] | undefined {
     if (this.fargateConfig.buildType !== "fromService") return undefined;
     return this.fargateConfig.fromService;
@@ -131,6 +156,11 @@ export const buildFargateService = (
 ): ReturnType<typeof buildBaseService> & {
   [K in keyof Omit<FargateServiceConfig, "envVariables" | "fromService">]: ExtractValueType<FargateServiceConfig[K]>;
 } & {
+  postBuildCommand?: ExtractValueType<ExtractConfigByBuildType<"nodejs">["postBuildCommand"]>;
+  installCommand?: ExtractValueType<ExtractConfigByBuildType<"nodejs" | "nixpacks">["installCommand"]>;
+  buildCommand?: ExtractValueType<ExtractConfigByBuildType<"nodejs" | "nixpacks">["buildCommand"]>;
+  startCommand?: ExtractValueType<ExtractConfigByBuildType<"nodejs" | "nixpacks">["startCommand"]>;
+  basePath?: ExtractValueType<ExtractConfigByBuildType<"nixpacks">["basePath"]>;
   fromService?: string;
   containerImage?: ExtractValueType<ExtractConfigByBuildType<"fromRepository">["containerImage"]>;
   dockerfilePath?: ExtractValueType<ExtractConfigByBuildType<"docker">["dockerfilePath"]>;
@@ -143,14 +173,29 @@ export const buildFargateService = (
   return {
     ...baseService,
     buildType: evaluator<FargateServiceConfig["buildType"]>(service.buildType),
+    domain: evaluator<FargateServiceConfig["domain"]>(service.domain),
     cpu: evaluator<FargateServiceConfig["cpu"]>(service.cpu),
     memory: evaluator<FargateServiceConfig["memory"]>(service.memory),
     storage: evaluator<FargateServiceConfig["storage"]>(service.storage),
     minInstances: evaluator<FargateServiceConfig["minInstances"]>(service.minInstances),
     maxInstances: evaluator<FargateServiceConfig["maxInstances"]>(service.maxInstances),
-    domain: evaluator<FargateServiceConfig["domain"]>(service.domain),
     port: evaluator<FargateServiceConfig["port"]>(service.port),
     healthCheckPath: evaluator<FargateServiceConfig["healthCheckPath"]>(service.healthCheckPath),
+    postBuildCommand: service.postBuildCommand
+      ? evaluator<ExtractConfigByBuildType<"nodejs">["postBuildCommand"]>(service.postBuildCommand)
+      : undefined,
+    installCommand: service.installCommand
+      ? evaluator<ExtractConfigByBuildType<"nodejs" | "nixpacks">["installCommand"]>(service.installCommand)
+      : undefined,
+    buildCommand: service.buildCommand
+      ? evaluator<ExtractConfigByBuildType<"nodejs" | "nixpacks">["buildCommand"]>(service.buildCommand)
+      : undefined,
+    startCommand: service.startCommand
+      ? evaluator<ExtractConfigByBuildType<"nodejs" | "nixpacks">["startCommand"]>(service.startCommand)
+      : undefined,
+    basePath: service.basePath
+      ? evaluator<ExtractConfigByBuildType<"nixpacks">["basePath"]>(service.basePath)
+      : undefined,
     fromService: service.fromService
       ? evaluator<ExtractConfigByBuildType<"fromService">["fromService"]>(service.fromService)?.id
       : undefined,
