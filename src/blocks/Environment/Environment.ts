@@ -5,6 +5,16 @@ export type EnvironmentConfig = {
   id: string;
   name?: string;
   region?: EnvironmentRegion;
+  source: {
+    branch: string;
+    trigger?: "manual" | "push";
+    pr?: true;
+    filter?: {
+      toBranches?: string[];
+      fromBranches?: string[];
+      labels?: string[];
+    };
+  };
   services?: Service[];
 };
 
@@ -25,6 +35,10 @@ class Environment {
 
   get region(): EnvironmentConfig["region"] {
     return this.config.region;
+  }
+
+  get source(): EnvironmentConfig["source"] {
+    return this.config.source;
   }
 
   get services(): EnvironmentConfig["services"] {

@@ -19,6 +19,7 @@ const buildEnvironment = (context: BuildContext, environment: Environment) => {
     id: environment.id,
     name: environment.name || environment.id,
     region,
+    source: environment.source,
     services: buildServices(environmentContext, environment.services),
   };
 };

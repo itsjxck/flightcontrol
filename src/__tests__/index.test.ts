@@ -1,16 +1,19 @@
+import { EnvironmentConfig } from "../blocks/Environment/Environment";
 import { Environment, EnvVariable, Project, Service } from "../index";
 
 describe("create a project", () => {
   test("should create project json", () => {
-    // Create a project with defaults
+    // Create a project with default region
     const project = new Project({ defaults: { region: "eu-west-2" } });
 
     // Create 3 environments
-    const [dev, staging, prod] = [
-      ["dev", "Development"],
-      ["staging", "Staging"],
-      ["prod", "Production"],
-    ].map(([id, name]) => new Environment({ id, name }));
+    const [dev, staging, prod] = (
+      [
+        ["dev", "Development", { branch: "main" }],
+        ["staging", "Staging", { branch: "main" }],
+        ["prod", "Production", { branch: "main", trigger: "manual" }],
+      ] as [string, string, EnvironmentConfig["source"]][]
+    ).map(([id, name, source]) => new Environment({ id, name, source }));
 
     // Add environments to project
     project.addEnvironments(dev, staging, prod);
