@@ -181,14 +181,14 @@ export const buildFargateService = (
     maxInstances: evaluator<FargateServiceConfig["maxInstances"]>(service.maxInstances),
     port: evaluator<FargateServiceConfig["port"]>(service.port),
     healthCheckPath: evaluator<FargateServiceConfig["healthCheckPath"]>(service.healthCheckPath),
-    postBuildCommand: service.postBuildCommand
-      ? evaluator<ExtractConfigByBuildType<"nodejs">["postBuildCommand"]>(service.postBuildCommand)
-      : undefined,
     installCommand: service.installCommand
       ? evaluator<ExtractConfigByBuildType<"nodejs" | "nixpacks">["installCommand"]>(service.installCommand)
       : undefined,
     buildCommand: service.buildCommand
       ? evaluator<ExtractConfigByBuildType<"nodejs" | "nixpacks">["buildCommand"]>(service.buildCommand)
+      : undefined,
+    postBuildCommand: service.postBuildCommand
+      ? evaluator<ExtractConfigByBuildType<"nodejs">["postBuildCommand"]>(service.postBuildCommand)
       : undefined,
     startCommand: service.startCommand
       ? evaluator<ExtractConfigByBuildType<"nodejs" | "nixpacks">["startCommand"]>(service.startCommand)
