@@ -1,5 +1,6 @@
 import BuildContext from "../../context";
-import EnvVariable, { buildEnvVariables, BuiltEnvVariable } from "../EnvVariable";
+import EnvVariable, { buildEnvVariables, BuiltEnvVariable, FromServiceEnvVariable } from "../EnvVariable";
+import { FromServiceEnvVariableConfig } from "../EnvVariable/FromService";
 import { DatabaseServiceType } from "./Database";
 import { FargateServiceType } from "./Fargate";
 import { StaticServiceType } from "./Static";
@@ -43,6 +44,10 @@ abstract class Service {
 
   get envVariables(): ServiceConfig["envVariables"] {
     return this._envVariables;
+  }
+
+  createEnvVariable(config: Omit<FromServiceEnvVariableConfig, "service">): FromServiceEnvVariable {
+    return new FromServiceEnvVariable({ ...config, service: this });
   }
 
   addEnvVariables(...envVariables: EnvVariable[]): Service {

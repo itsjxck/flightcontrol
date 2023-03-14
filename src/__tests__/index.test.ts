@@ -36,9 +36,8 @@ describe("create a project", () => {
     });
 
     // Create database env var
-    const databaseUrl = new EnvVariable.FromService({
+    const databaseUrl = database.createEnvVariable({
       name: "DATABASE_URL",
-      service: database,
       value: "dbConnectionString",
     });
 
